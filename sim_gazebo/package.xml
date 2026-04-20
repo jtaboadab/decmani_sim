@@ -18,17 +18,22 @@
   <depend>tf2_geometry_msgs</depend>
 
   <!-- Gazebo-->
-  <depend>gazebo_ros</depend>
-  <depend>gazebo_ros2_control</depend>
+  <exec_depend>ros_gz_sim</exec_depend>
+  <exec_depend>ros_gz_bridge</exec_depend>
+  <exec_depend>ros_gz_image</exec_depend>
 
   <!-- Control -->
   <depend>ros2_control</depend>
   <depend>ros2_controllers</depend>
+  <depend>gz_ros2_control</depend>
   <depend>joint_state_publisher</depend>
   <depend>robot_state_publisher</depend>
 
   <!-- MoveIt2 (fase 6)-->
   <depend>moveit_ros_planning_interface</depend>
+
+  <!-- Utilidades -->
+  <depend>xacro</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

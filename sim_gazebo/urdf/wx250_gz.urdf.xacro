@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<robot name="wx250" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!-- Argumentos -->
+  <xacro:arg name="robot_name" default="wx250"/>
+  <xacro:arg name="base_link_frame" default="base_link"/>
+  <xacro:arg name="use_world_frame" default="false"/>
+  <xacro:arg name="external_urdf_loc" default=""/>
+  <xacro:arg name="use_gripper" default="true"/>
+
+  <!-- Incluir el URDF original del WX250 -->
+  <xacro:include filename="$(find interbotix_xsarm_descriptions)/urdf/wx250.urdf.xacro"/>
+
+  <!-- Añadir materiales/colores para visualización en Gazebo -->
+  <gazebo reference="wx250/base_link">
+    <material>Gazebo/DarkGrey</material>
+  </gazebo>
+  
+  <gazebo reference="wx250/shoulder_link">
+    <material>Gazebo/Black</material>
+  </gazebo>
+  
+  <gazebo reference="wx250/upper_arm_link">
+    <material>Gazebo/Black</material>
+  </gazebo>
+  
+  <gazebo reference="wx250/forearm_link">
+    <material>Gazebo/Black</material>
+  </gazebo>
+  
+  <gazebo reference="wx250/wrist_link">
+    <material>Gazebo/Black</material>
+  </gazebo>
+  
+  <gazebo reference="wx250/gripper_link">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+
+</robot>
