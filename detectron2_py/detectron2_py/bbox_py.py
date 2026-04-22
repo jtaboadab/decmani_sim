@@ -26,14 +26,14 @@ class Bbox(Node):
         self.P=np.array([[0.9999510049819946, 0.009837210178375244, 0],[-0.009841140359640121, 0.9999340176582336, 0], [0, 0, 1]])
         
         ## Valores intrínsecos de cámara
-        self.matriz_proyeccion = np.array([[509.0920104980469, 0.0, 299.10101318359375],
-                                        [0.0, 509.0920104980469, 244.7949981689453],
+        self.matriz_proyeccion = np.array([[554.3827056884766, 0.0, 320.0],
+                                        [0.0, 554.3827056884766, 240.0],
                                         [0.0, 0.0, 1.0]], dtype=np.float32)
         
-        self.fx = 509.0920104980469
-        self.fy = 509.0920104980469
-        self.centro_x = 299.10101318359375
-        self.centro_y = 244.7949981689453
+        self.fx = 554.3827056884766
+        self.fy = 554.3827056884766
+        self.centro_x = 320.0
+        self.centro_y = 240.0
         
         self.matriz_proy_inversa = np.linalg.inv(self.matriz_proyeccion)
         
@@ -151,7 +151,18 @@ class Bbox(Node):
             
             # A partir del centroide sacar la coordenada Z de la imagen de profundidad sin normalizar
             im_depth_scaled = self.depth_to_color(self.cv_depth_image) # Transformamos la imagen de profundidad sin normalizar
-            z = 0.001*im_depth_scaled[cY][cX] # Pasamos a metros
+
+            # En simulación la profundidad ya está en metros (float32)
+            # En hardware real estaba en milímetros (uint16), por eso se multiplicaba por 0.001
+            valor_profundidad = im_depth_scaled[cY][cX]
+
+            if self.cv_depth_image.dtype == np.float32:
+
+                z = float(valor_profundidad)  # Ya está en metros
+
+            else:
+
+                z = 0.001 * float(valor_profundidad)  # Convertir de mm a metros
             
         else:
             
@@ -162,33 +173,9 @@ class Bbox(Node):
     ## Función que transforma la imagen de profundidad al ángulo de captura de la imagen a color
     def depth_to_color(self, im):
         
-        # Dimensiones originales de la imagen
-        original_height, original_width = im.shape[:2]
+        # En simulación ambas cámaras están alineadas, no necesita transformación
 
-        # Factor de escala
-        scale_factor = 0.925
-
-        # Calculamos el nuevo tamaño manteniendo las dimensiones originales
-        new_height = int(original_height * scale_factor)
-        new_width = int(original_width * scale_factor)
-
-        # Calculamos los píxeles de relleno
-        padding_top = (original_height - new_height) // 2
-        padding_bottom = original_height - new_height - padding_top
-        padding_left = (original_width - new_width) // 2
-        padding_right = original_width - new_width - padding_left
-
-        # Escalamos la imagen
-        cv_scaled_image = cv2.resize(im, (new_width, new_height))
-
-        # Añadimos los píxeles de relleno
-        cv_scaled_image = cv2.copyMakeBorder(cv_scaled_image, padding_top, padding_bottom, padding_left, padding_right, cv2.BORDER_CONSTANT, value=0)
-
-        # Aplicamos la transformación
-        cv_scaled_image_a = cv2.warpAffine(cv_scaled_image, self.M, (im.shape[1], im.shape[0]))
-        cv_scaled_image_p = cv2.warpPerspective(cv_scaled_image_a, self.P, (im.shape[1], im.shape[0]))
-        
-        return cv_scaled_image_p
+        return im
     
     ## Función que calcula el centroide del objeto a partir de su máscara
     def calcular_centroide(self, mask):
