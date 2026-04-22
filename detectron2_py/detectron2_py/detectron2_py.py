@@ -1,3 +1,6 @@
+import os
+from ament_index_python.packages import get_package_share_directory
+
 # Librerías para crear el nodo de ROS2
 import rclpy
 from rclpy.node import Node
@@ -23,6 +26,9 @@ class Detectron2(Node):
 
         super().__init__('detectron2')
 
+        self.package_path = os.path.dirname(os.path.abspath(__file__))
+        self.contador_file = os.path.join(self.package_path, 'contador_objetos.txt')
+
         # Puente para convertir entre imágenes de ROS y OpenCV
         self.cvbridge_ = CvBridge()
 
@@ -45,7 +51,7 @@ class Detectron2(Node):
         self.publisher_depth_image_ = self.create_publisher(Image, '/detectron2/depth_image', 10)
 
         # Subscribers
-        self.subscription_color_image_ = self.create_subscription(Image, '/camera/color/image_raw', self.listener_callback_color_image, 10)
+        self.subscription_color_image_ = self.create_subscription(Image, '/camera/image_raw', self.listener_callback_color_image, 10)
         self.subscription_color_image_
         self.subscription_depth_image_ = self.create_subscription(Image, '/camera/depth/image_raw', self.listener_callback_depth_image, 10)
         self.subscription_depth_image_
@@ -69,14 +75,14 @@ class Detectron2(Node):
             self.publisher_masks_image_.publish(masks_msg)
             self.publisher_depth_image_.publish(self.depth_image_)
             
-            with open('/home/tfg/dectmani_ws/src/detectron2_py/detectron2_py/contador_objetos.txt', 'w') as archivo:
+            with open(self.contador_file, 'w') as archivo:
                 archivo.write('%s' % self.count_)
                 
             self.get_logger().info('%i Objetos detectados' % self.count_)           
             
         else:
             
-            with open('/home/tfg/dectmani_ws/src/detectron2_py/detectron2_py/contador_objetos.txt', 'w') as archivo:
+            with open(self.contador_file, 'w') as archivo:
                 archivo.write('%s' % self.count_)
             self.get_logger().info('Ningún objeto detectado')
 
