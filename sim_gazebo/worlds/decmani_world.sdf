@@ -30,6 +30,13 @@
       filename="gz-sim-imu-system"
       name="gz::sim::systems::Imu">
     </plugin>
+    <plugin
+      filename="gz-sim-pose-publisher-system"
+      name="gz::sim::systems::PosePublisher">
+      <publish_link_pose>true</publish_link_pose>
+      <publish_sensor_pose>true</publish_sensor_pose>
+      <publish_nested_model_pose>true</publish_nested_model_pose>
+    </plugin>
 
     <!-- Iluminación -->
     <light type="directional" name="sun">

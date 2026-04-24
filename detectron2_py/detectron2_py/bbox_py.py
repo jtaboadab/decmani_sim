@@ -4,7 +4,7 @@ from rclpy.node import Node
 
 # Librerías de mensajes de ROS2
 from sensor_msgs.msg import Image
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, PointStamped
 from msg_srv_creator.msg import Mask
 from msg_srv_creator.msg import Bbox3d
 
@@ -49,14 +49,14 @@ class Bbox(Node):
         self.depth_image_ = Image()
         self.masks_ = Mask()
         self.bbox_3d = Bbox3d()
-        self.center_point_ = Point()
+        self.center_point_ = PointStamped()
         self.cv_depth_image = None
         self.cv_normalized_depth_image = None
         self.count_ = 0
         
         # Publishers
         self.publisher_bbox_3d_ = self.create_publisher(Bbox3d, '/bbox/bbox_3d', 10)
-        self.publisher_center_point_ = self.create_publisher(Point, '/bbox/center_point', 10)
+        self.publisher_center_point_ = self.create_publisher(PointStamped, '/bbox/center_point', 10)
 
         # Subscribers
         self.subscription_masks_ = self.create_subscription(Mask, '/detectron2/masks_image', self.listener_callback_masks, 10)
@@ -87,7 +87,9 @@ class Bbox(Node):
                 
                     self.calcular_bounding_box_3d((x, y, z), self.dimensiones) # Calculamos el bounding box 3D a partir de la coordenadas y las dimensiones del objeto
 
-                    self.center_point_ = self.bbox_3d.centro_objeto[0]
+                    self.center_point_.header.stamp = self.get_clock().now().to_msg()
+                    self.center_point_.header.frame_id = 'camera/camera_link/camera_rgb'
+                    self.center_point_.point = self.bbox_3d.centro_objeto[0]
                     
                     self.publisher_bbox_3d_.publish(self.bbox_3d) # Publicamos el bounding box 3D por el topic '/bbox/bbox_3d'
                     self.publisher_center_point_.publish(self.center_point_)

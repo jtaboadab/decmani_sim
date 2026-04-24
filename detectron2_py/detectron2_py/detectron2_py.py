@@ -1,5 +1,4 @@
 import os
-from ament_index_python.packages import get_package_share_directory
 
 # Librerías para crear el nodo de ROS2
 import rclpy

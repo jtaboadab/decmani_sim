@@ -68,14 +68,49 @@ def generate_launch_description():
         output='screen'
     )
 
-    # Bridge Gazebo → ROS2 para la cámara
-    camera_bridge = Node(
+    # Bridge Gazebo → ROS2 para joint states y cámara
+    bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
         arguments=[
+            '/world/decmani_world/clock@rosgraph_msgs/msg/Clock@gz.msgs.Clock',
             '/camera/image_raw@sensor_msgs/msg/Image@gz.msgs.Image',
             '/camera/depth/image_raw@sensor_msgs/msg/Image@gz.msgs.Image',
             '/camera/camera_info@sensor_msgs/msg/CameraInfo@gz.msgs.CameraInfo',
+            '/world/decmani_world/model/wx250/joint_state@sensor_msgs/msg/JointState@gz.msgs.Model',
+        ],
+        remappings=[
+            ('/world/decmani_world/model/wx250/joint_state', '/joint_states'),
+            ('/world/decmani_world/pose/info', '/tf'),
+        ],
+        output='screen'
+    )
+
+    # Publicar joint states (necesario para robot_state_publisher)
+    joint_state_publisher = Node(
+        package='joint_state_publisher',
+        executable='joint_state_publisher',
+        name='joint_state_publisher',
+        parameters=[{
+            'robot_description': robot_description,
+            'use_sim_time': True
+        }],
+        output='screen'
+    )
+
+    # TF estático world → base del robot
+    static_tf_world_robot = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        arguments=[
+            '--x', '-0.165',   # posición X del robot en el mundo
+            '--y', '0.0',
+            '--z', '0.4',      # altura del robot sobre la plataforma
+            '--roll', '0.0',
+            '--pitch', '0.0',
+            '--yaw', '0.0',
+            '--frame-id', 'odom',
+            '--child-frame-id', 'wx250/base_link'
         ],
         output='screen'
     )
@@ -84,6 +119,8 @@ def generate_launch_description():
         gz_resource_path,
         gazebo,
         robot_state_publisher,
+        joint_state_publisher,
         spawn_robot,
-        camera_bridge,
+        bridge,
+        static_tf_world_robot,
     ])

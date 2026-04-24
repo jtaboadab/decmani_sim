@@ -36,4 +36,11 @@
     <material>Gazebo/Grey</material>
   </gazebo>
 
+  <gazebo>
+    <plugin
+      filename="gz-sim-joint-state-publisher-system"
+      name="gz::sim::systems::JointStatePublisher">
+    </plugin>
+  </gazebo>
+
 </robot>
