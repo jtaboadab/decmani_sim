@@ -51,7 +51,7 @@ def generate_launch_description():
         PythonLaunchDescriptionSource([
             PathJoinSubstitution([pkg_ros_gz_sim, 'launch', 'gz_sim.launch.py'])
         ]),
-        launch_arguments={'gz_args': ['-r ', world_file]}.items()
+        launch_arguments={'gz_args': ['-s -r ', world_file]}.items()
     )
     
     # Spawn del robot en Gazebo
@@ -73,15 +73,16 @@ def generate_launch_description():
         package='ros_gz_bridge',
         executable='parameter_bridge',
         arguments=[
-            '/world/decmani_world/clock@rosgraph_msgs/msg/Clock@gz.msgs.Clock',
-            '/camera/image_raw@sensor_msgs/msg/Image@gz.msgs.Image',
-            '/camera/depth/image_raw@sensor_msgs/msg/Image@gz.msgs.Image',
+            '/camera/image@sensor_msgs/msg/Image@gz.msgs.Image',
+            '/camera/depth_image@sensor_msgs/msg/Image@gz.msgs.Image',
             '/camera/camera_info@sensor_msgs/msg/CameraInfo@gz.msgs.CameraInfo',
+            '/camera/points@sensor_msgs/msg/PointCloud2@gz.msgs.PointCloudPacked',
             '/world/decmani_world/model/wx250/joint_state@sensor_msgs/msg/JointState@gz.msgs.Model',
         ],
         remappings=[
             ('/world/decmani_world/model/wx250/joint_state', '/joint_states'),
-            ('/world/decmani_world/pose/info', '/tf'),
+            ('/camera/image', '/camera/image_raw'),
+            ('/camera/depth_image', '/camera/depth/image_raw'),
         ],
         output='screen'
     )
@@ -95,6 +96,26 @@ def generate_launch_description():
             'robot_description': robot_description,
             'use_sim_time': True
         }],
+        output='screen'
+    )
+
+    # TF estático wx250/base_link → cámara
+    # Calculado a partir de la pose SDF (pitch=0.7, yaw=pi):
+    # gz rgbd_camera mira por +X del camera_link → camera_rgb +Z=forward, +X=right, +Y=down
+    static_tf = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        arguments=[
+            '--x', '1.465',
+            '--y', '0.0',
+            '--z', '0.6',
+            '--qx', '-0.641071',
+            '--qy', '-0.641071',
+            '--qz', '0.298329',
+            '--qw', '0.298329',
+            '--frame-id', 'wx250/base_link',
+            '--child-frame-id', 'camera/camera_link/camera_rgb'
+        ],
         output='screen'
     )
 
@@ -122,5 +143,6 @@ def generate_launch_description():
         joint_state_publisher,
         spawn_robot,
         bridge,
+        static_tf,
         static_tf_world_robot,
     ])

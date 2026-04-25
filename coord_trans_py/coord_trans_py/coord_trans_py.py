@@ -40,6 +40,10 @@ class ArucoTFPublisher(Node):
 
         self.center_point_camera_ = msg
         self.center_point_camera_.header.stamp = rclpy.time.Time().to_msg()
+
+        # DEBUG: Ver qué frames están disponibles
+        self.get_logger().info('Frames disponibles: %s' % self.tf_buffer_.all_frames_as_string())
+    
         
         try:
             self.center_point_robot_stamped_ = self.tf_buffer_.transform(
