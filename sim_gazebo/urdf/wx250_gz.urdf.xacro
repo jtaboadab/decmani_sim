@@ -43,4 +43,68 @@
     </plugin>
   </gazebo>
 
+  <!-- Sobrescribir ros2_control para usar gz_ros2_control en simulación -->
+  <ros2_control name="GazeboSystem" type="system">
+    <hardware>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+    </hardware>
+    <joint name="waist">
+      <command_interface name="position">
+        <param name="min">-3.14</param>
+        <param name="max">3.14</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="shoulder">
+      <command_interface name="position">
+        <param name="min">-1.88</param>
+        <param name="max">1.99</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="elbow">
+      <command_interface name="position">
+        <param name="min">-2.15</param>
+        <param name="max">1.61</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="wrist_angle">
+      <command_interface name="position">
+        <param name="min">-1.75</param>
+        <param name="max">2.15</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="wrist_rotate">
+      <command_interface name="position">
+        <param name="min">-3.14</param>
+        <param name="max">3.14</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="left_finger">
+      <command_interface name="position">
+        <param name="min">0.015</param>
+        <param name="max">0.037</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
+
+  <!-- Plugin de gz_ros2_control para Gazebo Harmonic -->
+  <gazebo>
+    <plugin
+      filename="gz_ros2_control-system"
+      name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+      <parameters>$(find sim_gazebo)/config/wx250_controllers.yaml</parameters>
+    </plugin>
+  </gazebo>
+
 </robot>

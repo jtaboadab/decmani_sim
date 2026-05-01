@@ -51,7 +51,7 @@ def generate_launch_description():
         PythonLaunchDescriptionSource([
             PathJoinSubstitution([pkg_ros_gz_sim, 'launch', 'gz_sim.launch.py'])
         ]),
-        launch_arguments={'gz_args': ['-s -r ', world_file]}.items()
+        launch_arguments={'gz_args': ['-r -v 4 ', world_file]}.items()
     )
     
     # Spawn del robot en Gazebo
@@ -73,6 +73,7 @@ def generate_launch_description():
         package='ros_gz_bridge',
         executable='parameter_bridge',
         arguments=[
+            '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
             '/camera/image@sensor_msgs/msg/Image@gz.msgs.Image',
             '/camera/depth_image@sensor_msgs/msg/Image@gz.msgs.Image',
             '/camera/camera_info@sensor_msgs/msg/CameraInfo@gz.msgs.CameraInfo',
@@ -84,18 +85,6 @@ def generate_launch_description():
             ('/camera/image', '/camera/image_raw'),
             ('/camera/depth_image', '/camera/depth/image_raw'),
         ],
-        output='screen'
-    )
-
-    # Publicar joint states (necesario para robot_state_publisher)
-    joint_state_publisher = Node(
-        package='joint_state_publisher',
-        executable='joint_state_publisher',
-        name='joint_state_publisher',
-        parameters=[{
-            'robot_description': robot_description,
-            'use_sim_time': True
-        }],
         output='screen'
     )
 
@@ -136,13 +125,36 @@ def generate_launch_description():
         output='screen'
     )
 
+    # Cargar y activar joint_state_broadcaster
+    load_joint_state_broadcaster = ExecuteProcess(
+        cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
+             'joint_state_broadcaster'],
+        output='screen'
+    )
+
+    # Cargar y activar arm_controller
+    load_arm_controller = ExecuteProcess(
+        cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
+             'arm_controller'],
+        output='screen'
+    )
+
+    # Cargar y activar gripper_controller
+    load_gripper_controller = ExecuteProcess(
+        cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
+             'gripper_controller'],
+        output='screen'
+    )
+
     return LaunchDescription([
         gz_resource_path,
         gazebo,
         robot_state_publisher,
-        joint_state_publisher,
         spawn_robot,
         bridge,
         static_tf,
         static_tf_world_robot,
+        load_joint_state_broadcaster,
+        load_arm_controller,
+        load_gripper_controller,
     ])
