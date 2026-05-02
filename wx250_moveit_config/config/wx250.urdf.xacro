@@ -3,7 +3,7 @@
     <xacro:arg name="initial_positions_file" default="initial_positions.yaml" />
 
     <!-- Import wx250 urdf file -->
-    <xacro:include filename="/tmp/wx250.urdf" />
+    <xacro:include filename="wx250.urdf" />
 
     <!-- Import control_xacro -->
     <xacro:include filename="wx250.ros2_control.xacro" />
