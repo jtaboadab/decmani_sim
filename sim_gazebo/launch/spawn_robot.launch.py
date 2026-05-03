@@ -5,6 +5,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution, Command
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+from launch_ros.parameter_descriptions import ParameterValue
 from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
@@ -25,14 +26,14 @@ def generate_launch_description():
     xacro_file = PathJoinSubstitution([pkg_sim_gazebo, 'urdf', 'wx250_gz.urdf.xacro'])
     
     # Procesar XACRO a URDF
-    robot_description = Command([
+    robot_description = ParameterValue(Command([
         'xacro ', xacro_file,
         ' robot_name:=wx250',
         ' base_link_frame:=base_link',
         ' use_world_frame:=false',
         ' external_urdf_loc:=""',
         ' use_gripper:=true'
-    ])
+    ]), value_type=str)
     
     # Nodo robot_state_publisher
     robot_state_publisher = Node(
@@ -54,16 +55,13 @@ def generate_launch_description():
         launch_arguments={'gz_args': ['-r -v 4 ', world_file]}.items()
     )
     
-    # Spawn del robot en Gazebo
+    # Spawn del robot en Gazebo (posición definida por world_fixed joint en el URDF)
     spawn_robot = Node(
         package='ros_gz_sim',
         executable='create',
         arguments=[
             '-topic', 'robot_description',
             '-name', 'wx250',
-            '-x', '-0.165',
-            '-y', '0.0',
-            '-z', '0.4'
         ],
         output='screen'
     )
@@ -108,23 +106,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    # TF estático world → base del robot
-    static_tf_world_robot = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        arguments=[
-            '--x', '-0.165',   # posición X del robot en el mundo
-            '--y', '0.0',
-            '--z', '0.4',      # altura del robot sobre la plataforma
-            '--roll', '0.0',
-            '--pitch', '0.0',
-            '--yaw', '0.0',
-            '--frame-id', 'odom',
-            '--child-frame-id', 'wx250/base_link'
-        ],
-        output='screen'
-    )
-
     # Cargar y activar joint_state_broadcaster
     load_joint_state_broadcaster = ExecuteProcess(
         cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
@@ -153,7 +134,6 @@ def generate_launch_description():
         spawn_robot,
         bridge,
         static_tf,
-        static_tf_world_robot,
         load_joint_state_broadcaster,
         load_arm_controller,
         load_gripper_controller,

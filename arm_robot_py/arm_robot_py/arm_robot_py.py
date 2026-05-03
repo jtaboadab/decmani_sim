@@ -1,85 +1,208 @@
-from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
+#!/usr/bin/env python3
+"""
+Nodo arm_robot_py adaptado para simulación con MoveIt2.
+
+Lee:
+  - /home/.../contador_objetos.txt → número de vasos detectados
+  - /home/.../object_point_from_robot.txt → coordenadas del vaso
+
+Mueve el robot WX250 en simulación usando MoveIt2 para coger los vasos
+y depositarlos en una posición fija.
+"""
+
+import os
 import ast
+import time
+from threading import Thread
 
-moving_time_1=3
-accel_time_1=0.75
+import rclpy
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
+from rclpy.node import Node
 
-moving_time_2=2
-accel_time_2=0.3
+from pymoveit2 import MoveIt2, MoveIt2Gripper
+from arm_robot_py import wx250_robot as robot
+
+
+# Rutas absolutas a los archivos compartidos
+WORKSPACE_DIR = '/media/jtaboadab/L/Proyectos/decmani_sim_ws'
+CONTADOR_FILE = os.path.join(
+    WORKSPACE_DIR, 'src', 'decmani_sim',
+    'detectron2_py', 'detectron2_py', 'contador_objetos.txt'
+)
+OBJECT_FILE = os.path.join(
+    WORKSPACE_DIR, 'src', 'decmani_sim',
+    'coord_trans_py', 'coord_trans_py', 'object_point_from_robot.txt'
+)
+
+
+class ArmRobotNode(Node):
+    """Nodo que controla el brazo robótico mediante MoveIt2."""
+
+    def __init__(self):
+        super().__init__('arm_robot_node')
+
+        callback_group = ReentrantCallbackGroup()
+
+        # Interfaz MoveIt2 para el brazo
+        self.moveit2 = MoveIt2(
+            node=self,
+            joint_names=robot.joint_names(),
+            base_link_name=robot.base_link_name(),
+            end_effector_name=robot.end_effector_name(),
+            group_name=robot.MOVE_GROUP_ARM,
+            callback_group=callback_group,
+        )
+
+        # Interfaz MoveIt2 para el gripper
+        self.moveit2_gripper = MoveIt2Gripper(
+            node=self,
+            gripper_joint_names=robot.gripper_joint_names(),
+            open_gripper_joint_positions=robot.OPEN_GRIPPER_JOINT_POSITIONS,
+            closed_gripper_joint_positions=robot.CLOSED_GRIPPER_JOINT_POSITIONS,
+            gripper_group_name=robot.MOVE_GROUP_GRIPPER,
+            callback_group=callback_group,
+        )
+
+        # Velocidad y aceleración por defecto (escalado)
+        self.moveit2.max_velocity = 0.5
+        self.moveit2.max_acceleration = 0.5
+
+        self.get_logger().info("Nodo arm_robot_node listo")
+
+    def go_to_pose(self, x, y, z, qx=0.0, qy=0.7071, qz=0.0, qw=0.7071):
+        """Mueve el efector final a una pose (x,y,z) con orientación dada."""
+        self.get_logger().info(f"Moviendo a pose: x={x:.3f}, y={y:.3f}, z={z:.3f}")
+        self.moveit2.move_to_pose(
+            position=[x, y, z],
+            quat_xyzw=[qx, qy, qz, qw],
+        )
+        self.moveit2.wait_until_executed()
+
+    def go_to_named(self, name):
+        """Mueve el robot a una pose nombrada (home, sleep)."""
+        self.get_logger().info(f"Moviendo a pose nombrada: {name}")
+        
+        # Posiciones definidas en el SRDF
+        poses = {
+            "home":  [0.0, -1.88, 1.5, 0.8, 0.0],
+            "sleep": [0.0, -1.85, 1.55, 0.8, 0.0],
+        }
+        
+        if name not in poses:
+            self.get_logger().error(f"Pose desconocida: {name}")
+            return
+        
+        joint_positions = poses[name]
+        self.moveit2.move_to_configuration(joint_positions)
+        self.moveit2.wait_until_executed()
+
+    def gripper_open(self):
+        """Abre el gripper."""
+        self.get_logger().info("Abriendo gripper")
+        self.moveit2_gripper.open()
+        self.moveit2_gripper.wait_until_executed()
+
+    def gripper_close(self):
+        """Cierra el gripper."""
+        self.get_logger().info("Cerrando gripper")
+        self.moveit2_gripper.close()
+        self.moveit2_gripper.wait_until_executed()
+
+    def leer_contador(self):
+        """Lee el número de objetos detectados."""
+        try:
+            with open(CONTADOR_FILE, 'r') as f:
+                return ast.literal_eval(f.read())
+        except Exception as e:
+            self.get_logger().warn(f"No se pudo leer contador: {e}")
+            return 0
+
+    def leer_objeto(self):
+        """Lee la posición del objeto detectado."""
+        try:
+            with open(OBJECT_FILE, 'r') as f:
+                lista = ast.literal_eval(f.read())
+                return lista[0], lista[1], lista[2]
+        except Exception as e:
+            self.get_logger().warn(f"No se pudo leer posición: {e}")
+            return 0.0, 0.0, 0.0
+
+
+def ciclo_principal(node):
+    """Ciclo principal de la aplicación."""
+    rclpy.spin_once(node, timeout_sec=2.0)
+    
+    while rclpy.ok():
+        input("\n>>> Pulsa ENTER para iniciar ciclo de recogida...")
+
+        desp = -0.08
+
+        # Ir a home
+        node.go_to_named("home")
+        time.sleep(1)
+
+        while rclpy.ok():
+            # Verificar si hay objetos
+            contador = node.leer_contador()
+            node.get_logger().info(f"Objetos detectados: {contador}")
+
+            if contador == 0:
+                node.get_logger().info("No hay más objetos, volviendo a sleep")
+                node.go_to_named("home")
+                node.go_to_named("sleep")
+                break
+
+            # Leer posición del objeto
+            x, y, z = node.leer_objeto()
+            node.get_logger().info(f"Vaso en: ({x:.3f}, {y:.3f}, {z:.3f})")
+
+            # Acercarse al vaso (z=0.25)
+            node.go_to_pose(x, y, 0.25)
+
+            # Bajar al vaso (z=0.1)
+            node.go_to_pose(x, y, 0.10)
+
+            # Cerrar gripper
+            node.gripper_close()
+            time.sleep(1)
+
+            # Subir
+            node.go_to_pose(x, y, 0.30)
+
+            # Mover a posición de depósito
+            node.go_to_pose(0.4, -desp, 0.30)
+            node.go_to_pose(0.4, -desp, 0.16)
+
+            # Soltar
+            node.gripper_open()
+            time.sleep(1)
+
+            # Subir
+            node.go_to_pose(0.4, -desp, 0.30)
+
+            # Siguiente posición de depósito
+            desp += 0.08
+
 
 def main():
-    bot = InterbotixManipulatorXS(
-        robot_model='wx250',
-        group_name='arm',
-        gripper_name='gripper'   
-    )
-    
-    while(True):
-        
-        # ESpera hasta pulsar 'enter'
-        input()
-        
-        # Inicializa el punto destino
-        desp=-0.08
-        
-        # El manipulador se sitúa en la pisición de inicio
-        bot.arm.go_to_home_pose(moving_time=moving_time_1, accel_time=accel_time_1)
-        
-        while(True):
-            
-            # Abre el archivo en modo de lectura
-            with open('/home/tfg/dectmani_ws/src/detectron2_py/detectron2_py/contador_objetos.txt', 'r') as archivo:
+    rclpy.init()
+    node = ArmRobotNode()
 
-                # Lee el contenido del archivo como una cadena
-                contenido = archivo.read()
+    # Ejecutar el spin en otro thread
+    executor = MultiThreadedExecutor()
+    executor.add_node(node)
+    spin_thread = Thread(target=executor.spin, daemon=True)
+    spin_thread.start()
 
-                # Convierte la cadena en una lista de números utilizando ast.literal_eval
-                contador_objetos = ast.literal_eval(contenido)
-                
-            # Si no hay objetos vuelve a la posición de reposo
-            if contador_objetos == 0:
-                
-                bot.arm.go_to_home_pose(moving_time=moving_time_2, accel_time=accel_time_2)
-                bot.arm.go_to_sleep_pose(moving_time=moving_time_1, accel_time=accel_time_1)
-                break
-                
-            # Abre el archivo en modo de lectura
-            with open('/home/tfg/dectmani_ws/src/coord_trans_py/coord_trans_py/object_point_from_robot.txt', 'r') as archivo:
+    try:
+        ciclo_principal(node)
+    except KeyboardInterrupt:
+        pass
 
-                # Lee el contenido del archivo como una cadena
-                contenido = archivo.read()
+    node.destroy_node()
+    rclpy.shutdown()
 
-                # Convierte la cadena en una lista de números utilizando ast.literal_eval
-                lista_numeros = ast.literal_eval(contenido)
 
-                # Almacena el primer y segundo número en las variables x e y
-                x = lista_numeros[0]
-                y = lista_numeros[1]
-                
-            # Realiza la trayectoria planificada
-            bot.arm.set_ee_pose_components(x=x, y=y, z=0.25, roll=0, pitch=1.25, moving_time=moving_time_1, accel_time=accel_time_1)
-            bot.arm.set_ee_pose_components(x=x, y=y, z=0.1, roll=0, pitch=1.25, moving_time=moving_time_2, accel_time=accel_time_2)
-            bot.gripper.grasp(2.0)
-            
-            bot.arm.set_ee_pose_components(x=x, y=y, z=0.3, roll=0, pitch=1.25, moving_time=moving_time_2, accel_time=accel_time_2)
-            bot.arm.set_ee_pose_components(x=0.4, y=0-desp, z=0.3, roll=0, pitch=1.25, moving_time=moving_time_1, accel_time=accel_time_1)
-            bot.arm.set_ee_pose_components(x=0.4, y=0-desp, z=0.16, roll=0, pitch=1.25, moving_time=moving_time_2, accel_time=accel_time_2)
-            bot.gripper.release(2.0)
-            
-            bot.arm.set_ee_pose_components(x=0.4, y=0-desp, z=0.3, roll=0, pitch=1.25, moving_time=moving_time_2, accel_time=accel_time_2)
-            
-            # Cambiamos el punto destino para el siguiente vaso
-            desp=desp+0.08
-            
-            # Si no hay objetos vuelve a la posición de reposo
-            if contador_objetos == 0:
-                
-                bot.arm.go_to_home_pose(moving_time=moving_time_2, accel_time=accel_time_2)
-                bot.arm.go_to_sleep_pose(moving_time=moving_time_1, accel_time=accel_time_1)
-                break
-        
-        
 if __name__ == '__main__':
     main()
-    
-    
