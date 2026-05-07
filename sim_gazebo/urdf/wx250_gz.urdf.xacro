@@ -48,6 +48,14 @@
     <plugin
       filename="gz-sim-joint-state-publisher-system"
       name="gz::sim::systems::JointStatePublisher">
+      <joint_name>waist</joint_name>
+      <joint_name>shoulder</joint_name>
+      <joint_name>elbow</joint_name>
+      <joint_name>wrist_angle</joint_name>
+      <joint_name>wrist_rotate</joint_name>
+      <joint_name>gripper</joint_name>
+      <joint_name>left_finger</joint_name>
+      <joint_name>right_finger</joint_name>
     </plugin>
   </gazebo>
 

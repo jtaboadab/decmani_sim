@@ -68,15 +68,37 @@ class ArmRobotNode(Node):
         self.moveit2.max_velocity = 0.5
         self.moveit2.max_acceleration = 0.5
 
+        # Tiempo máximo para que OMPL encuentre una trayectoria
+        self.moveit2.allowed_planning_time = 10.0
+        # Intentos de planificación paralelos (OMPL lanza threads)
+        self.moveit2.num_planning_attempts = 10
+
         self.get_logger().info("Nodo arm_robot_node listo")
 
     def go_to_pose(self, x, y, z, qx=0.0, qy=0.7071, qz=0.0, qw=0.7071):
-        """Mueve el efector final a una pose (x,y,z) con orientación dada."""
+        """Mueve el efector final a una pose (x,y,z) usando IK + move_to_configuration.
+        
+        Workaround: pymoveit2.move_to_pose tiene un bug con OMPL que impide
+        samplear estados goal. Resolvemos IK manualmente y movemos por joints.
+        """
         self.get_logger().info(f"Moviendo a pose: x={x:.3f}, y={y:.3f}, z={z:.3f}")
-        self.moveit2.move_to_pose(
+        
+        # Resolver IK manualmente
+        joints = self.moveit2.compute_ik(
             position=[x, y, z],
             quat_xyzw=[qx, qy, qz, qw],
         )
+        
+        if joints is None:
+            self.get_logger().warn(f"IK FAILED para pose ({x:.3f}, {y:.3f}, {z:.3f})")
+            return
+        
+        # Extraer solo los 5 joints del brazo
+        arm_joints = list(joints.position[:5])
+        self.get_logger().info(f"IK OK. Joints: {[round(j, 3) for j in arm_joints]}")
+        
+        # Mover por configuración (evita el bug de OMPL con pose goals)
+        self.moveit2.move_to_configuration(joint_positions=arm_joints)
         self.moveit2.wait_until_executed()
 
     def go_to_named(self, name):
@@ -158,10 +180,10 @@ def ciclo_principal(node):
             node.get_logger().info(f"Vaso en: ({x:.3f}, {y:.3f}, {z:.3f})")
 
             # Acercarse al vaso (z=0.25)
-            node.go_to_pose(x, y, 0.25)
+            node.go_to_pose(x, y, 0.20)
 
             # Bajar al vaso (z=0.1)
-            node.go_to_pose(x, y, 0.10)
+            node.go_to_pose(x, y, 0.13)
 
             # Cerrar gripper
             node.gripper_close()

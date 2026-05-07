@@ -1,4 +1,5 @@
 import os
+from arm_robot_py.arm_robot_py import WORKSPACE_DIR
 import rclpy
 from rclpy.node import Node
 import rclpy.duration
@@ -16,8 +17,11 @@ class ArucoTFPublisher(Node):
     def __init__(self):
         super().__init__('aruco_tf_publisher')
 
-        self.package_path = os.path.dirname(os.path.abspath(__file__))
-        self.object_point_file = os.path.join(self.package_path, 'object_point_from_robot.txt')
+        WORKSPACE_DIR = '/media/jtaboadab/L/Proyectos/decmani_sim_ws'
+        self.object_point_file = os.path.join(
+            WORKSPACE_DIR, 'src', 'decmani_sim',
+            'coord_trans_py', 'coord_trans_py', 'object_point_from_robot.txt'
+)
 
         self.tf_buffer_ = tf2_ros.Buffer()
         self.tf_listener_ = tf2_ros.TransformListener(self.tf_buffer_, self)

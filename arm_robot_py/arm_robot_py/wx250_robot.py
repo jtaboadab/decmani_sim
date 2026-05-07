@@ -24,7 +24,7 @@ def base_link_name(prefix: str = "wx250/") -> str:
 
 
 def end_effector_name(prefix: str = "wx250/") -> str:
-    return prefix + "ee_arm_link"
+    return prefix + "gripper_link"
 
 
 def gripper_joint_names(prefix: str = "") -> List[str]:
