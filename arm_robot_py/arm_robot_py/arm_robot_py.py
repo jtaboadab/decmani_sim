@@ -161,6 +161,10 @@ def ciclo_principal(node):
         desp = -0.08
 
         # Ir a home
+        node.gripper_close()
+        time.sleep(1)
+        node.gripper_open()
+        time.sleep(1)
         node.go_to_named("home")
         time.sleep(1)
 
@@ -175,6 +179,7 @@ def ciclo_principal(node):
                 node.go_to_named("sleep")
                 break
 
+            input("\n>>> Pulsa ENTER para recoger el vaso...")
             # Leer posición del objeto
             x, y, z = node.leer_objeto()
             node.get_logger().info(f"Vaso en: ({x:.3f}, {y:.3f}, {z:.3f})")
@@ -183,25 +188,30 @@ def ciclo_principal(node):
             node.go_to_pose(x, y, 0.20)
 
             # Bajar al vaso (z=0.1)
-            node.go_to_pose(x, y, 0.13)
+            node.go_to_pose(x, y, 0.15)
 
             # Cerrar gripper
             node.gripper_close()
             time.sleep(1)
 
             # Subir
-            node.go_to_pose(x, y, 0.30)
+            node.go_to_pose(x, y, 0.25)
 
-            # Mover a posición de depósito
+            """# Mover a posición de depósito
             node.go_to_pose(0.4, -desp, 0.30)
-            node.go_to_pose(0.4, -desp, 0.16)
+            node.go_to_pose(0.4, -desp, 0.16)"""
+
+            # Bajar
+            node.go_to_pose(x, y, 0.15)
 
             # Soltar
             node.gripper_open()
             time.sleep(1)
 
             # Subir
-            node.go_to_pose(0.4, -desp, 0.30)
+            # node.go_to_pose(0.4, -desp, 0.30)
+
+            node.go_to_named("home")
 
             # Siguiente posición de depósito
             desp += 0.08

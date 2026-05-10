@@ -126,7 +126,6 @@ def generate_launch_description():
              'gripper_controller'],
         output='screen'
     )
-
     return LaunchDescription([
         gz_resource_path,
         gazebo,
