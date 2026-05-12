@@ -6,7 +6,7 @@ MOVE_GROUP_ARM: str = "arm"
 MOVE_GROUP_GRIPPER: str = "gripper"
 
 OPEN_GRIPPER_JOINT_POSITIONS: List[float] = [0.037]
-CLOSED_GRIPPER_JOINT_POSITIONS: List[float] = [0.015]
+CLOSED_GRIPPER_JOINT_POSITIONS: List[float] = [0.005]
 
 
 def joint_names(prefix: str = "") -> List[str]:

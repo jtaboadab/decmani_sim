@@ -101,8 +101,8 @@
             </box>
           </geometry>
           <material>
-            <ambient>0.5 0.3 0.1 1</ambient>
-            <diffuse>0.5 0.3 0.1 1</diffuse>
+            <ambient>0.1 0.1 0.3 1</ambient>
+            <diffuse>0.15 0.15 0.4 1</diffuse>
           </material>
         </visual>
       </link>
@@ -134,18 +134,18 @@
       </link>
     </model>
 
-    <!-- Vaso 1 (ACE Coffee Mug) -->
+    <!-- Vaso 1 -->
     <include>
       <name>cup_1</name>
       <pose>0.25 0.05 0.3 0 0 0</pose>
-      <uri>https://fuel.gazebosim.org/1.0/GoogleResearch/models/ACE_Coffee_Mug_Kristen_16_oz_cup</uri>
+      <uri>https://fuel.gazebosim.org/1.0/GoogleResearch/models/Ecoforms_Cup_B4_SAN</uri>
     </include>
 
-    <!-- Vaso 2 (ACE Coffee Mug) -->
+    <!-- Vaso 2 -->
     <include>
       <name>cup_2</name>
       <pose>0.25 -0.1 0.3 0 0 0</pose>
-      <uri>https://fuel.gazebosim.org/1.0/GoogleResearch/models/ACE_Coffee_Mug_Kristen_16_oz_cup</uri>
+      <uri>https://fuel.gazebosim.org/1.0/GoogleResearch/models/Ecoforms_Cup_B4_SAN</uri>
     </include>
 
     <!-- Cámara RGB-D fija apuntando a la mesa -->

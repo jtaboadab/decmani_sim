@@ -161,16 +161,16 @@ def ciclo_principal(node):
         desp = -0.08
 
         # Ir a home
-        """node.gripper_close()
+        node.gripper_close()
         time.sleep(1)
         node.gripper_open()
-        time.sleep(1)"""
+        time.sleep(1)
         node.go_to_named("home")
         time.sleep(1)
 
         # Offset para que las puntas de los dedos coincidan con el filo del vaso
-        offset_x = -0.02
-        offset_y = 0.04  
+        offset_x = 0.04
+        offset_y = 0.04
 
         while rclpy.ok():
             # Verificar si hay objetos
@@ -189,24 +189,25 @@ def ciclo_principal(node):
             node.get_logger().info(f"Vaso en: ({x:.3f}, {y:.3f}, {z:.3f})")
 
             # Acercarse al vaso (z=0.25)
-            node.go_to_pose(x + offset_x, y + offset_y, 0.20)
-
+            node.go_to_pose(x + offset_x, y + offset_y, 0.15)
+            time.sleep(1)
             # Bajar al vaso (z=0.1)
-            node.go_to_pose(x + offset_x, y + offset_y, 0.13)
-
+            node.go_to_pose(x + offset_x, y + offset_y, 0.07)
+            time.sleep(1)
             # Cerrar gripper
             node.gripper_close()
             time.sleep(1)
 
             # Subir
-            node.go_to_pose(x + offset_x, y + offset_y, 0.20)
+            node.go_to_pose(x + offset_x, y + offset_y, 0.15)
+            time.sleep(1)
 
             """# Mover a posición de depósito
             node.go_to_pose(0.4, -desp, 0.30)
             node.go_to_pose(0.4, -desp, 0.16)"""
 
             # Bajar
-            node.go_to_pose(x + offset_x, y + offset_y, 0.13)
+            node.go_to_pose(x + offset_x, y + offset_y, 0.07)
 
             # Soltar
             node.gripper_open()
